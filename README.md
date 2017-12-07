@@ -1,6 +1,6 @@
-# objectUtils
+# activity-segment
 
-Simple utils which I use a lot working with JavaScript objects
+Utils for working with segments (pace, distance, duration) of an activity
 
 ## How to run
 ```
