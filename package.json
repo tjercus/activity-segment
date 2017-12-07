@@ -23,5 +23,10 @@
     "babel-tape-runner": "^2.0.1",
     "faucet": "0.0.1",
     "tape": "^4.8.0"
+  },
+  "dependencies": {
+    "moment": "^2.19.3",
+    "object-utils-2": "^1.0.0",
+    "pad-left": "^2.1.0"
   }
 }
