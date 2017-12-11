@@ -9,8 +9,11 @@ import {
   removeSegment,
   addSegment,
   updateSegment,
-  findSegment
+  findSegment,
+  convertPaceTo400,
 } from "../src/segmentUtils";
+
+import { clone } from "object-utils-2";
 
 /**
  * Tests for segmentUtils}
@@ -269,42 +272,30 @@ test("augmentSegmentData should augment with a duration in only zeros", (assert)
 });
 
 test("isDirtySegment should detect a dirty segment", (assert) => {
-  let segments = [{
-    uuid: "segment1",
-    distance: 12.929,
-    duration: "01:07:48",
-    pace: "05:10"
-  }];
-
   let segment = {
     uuid: "segment1",
     distance: 12.929,
     duration: "01:06:48",
     pace: "05:10"
   };
+  let segmentClone = clone(segment);
+  let segments = [segment];
+  segmentClone.duration = "01:07:48";
 
-  let isDirty = isDirtySegment(segment, segments);
-  assert.ok(isDirty);
+  assert.ok(isDirtySegment(segmentClone, segments));
   assert.end();
 });
 
 test("isDirtySegment should NOT detect a dirty segment", (assert) => {
-  let segments = [{
-    uuid: "segment1",
-    distance: 12.929,
-    duration: "01:06:48",
-    pace: "05:10"
-  }];
-
   let segment = {
     uuid: "segment1",
     distance: 12.929,
     duration: "01:06:48",
     pace: "05:10"
   };
+  let segments = [segment];
 
-  let isDirty = isDirtySegment(segment, segments);
-  assert.notOk(isDirty);
+  assert.notOk(isDirtySegment(segment, segments));
   assert.end();
 });
 
@@ -428,7 +419,31 @@ test("isValidSegment should detect a NOT valid segment", (assert) => {
   assert.end();
 });
 
-test("parseDuration should NOT parse duration when input is not parsable from int", (assert) => {
+test("isValidSegment should detect a NOT valid segment, while calc distance", (assert) => {
+  let segment = {
+    distance: 10,
+    duration: "01:00:00",
+    pace: "1206:00"
+  };
+
+  let isValid = isValidSegment(segment);
+  assert.notOk(isValid);
+  assert.end();
+});
+
+test("isValidSegment should detect a NOT valid segment, because of a broken pace", (assert) => {
+  let segment = {
+    distance: 5,
+    duration: "01:06:48",
+    pace: "barf"
+  };
+
+  let isValid = isValidSegment(segment);
+  assert.notOk(isValid);
+  assert.end();
+});
+
+test("parseDuration should NOT parse duration when input is not parse-able from int", (assert) => {
   assert.equal(parseDuration(null), null, "should return null on null");
   assert.equal(parseDuration(""), "", "should return empty string on empty string");
   assert.equal(parseDuration(0), "00:00:00", "should 00:00:00 on zero int");
@@ -555,5 +570,19 @@ test("findSegment should find a segment", (assert) => {
   };
   const foundSegment = findSegment(segment.uuid, [segment, segment2]);
   assert.equal(foundSegment.uuid, "88888", "finding a segment by id from a collection");
+  assert.end();
+});
+
+test("convertPaceTo400 should work with unrounded case", (assert) => {
+  const pace = "04:00";
+  const pace400 = convertPaceTo400(pace);
+  assert.equal(pace400, "01:36");
+  assert.end();
+});
+
+test("convertPaceTo400 should work with rounding", (assert) => {
+  const pace = "03:52";
+  const pace400 = convertPaceTo400(pace);
+  assert.equal(pace400, "01:33");
   assert.end();
 });

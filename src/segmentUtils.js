@@ -58,18 +58,18 @@ export const findSegment = (uuid, segments) => {
  * @return {Array<Segment>} segments
  */
 export const updateSegment = (segment, segments) => {
-  const segmentClone = augmentSegmentData(segment);
+  const _segment = augmentSegmentData(segment);
   const _segments = clone(segments);
-  const isSeg = _segment => String(_segment.uuid) === String(segmentClone.uuid);
+  const isSeg = _segment => String(_segment.uuid) === String(_segment.uuid);
   const index = _segments.findIndex(isSeg);
-  _segments[index] = segmentClone;
+  _segments[index] = _segment;
   return _segments;
 };
 
 /**
  * Make totals for the collective segments in a training
  * @param {Array<Segment>} segments
- * @return {Total} total
+ * @return {Object<Total>} total
  */
 export const makeSegmentsTotal = segments => {
   const totalObj = {
@@ -80,7 +80,7 @@ export const makeSegmentsTotal = segments => {
   if (segments.length === 0) {
     return totalObj;
   }
-  segments.forEach((segment) => {
+  segments.forEach(segment => {
     const _segment = augmentSegmentData(segment);
     totalObj.distance += parseFloat(_segment.distance);
     const totalDurationObj = moment.duration(totalObj.duration).add(_segment.duration);
@@ -96,7 +96,7 @@ export const makeSegmentsTotal = segments => {
 
 /**
  * Calculate transient segment data based on present data
- * @param  {Segment} segment
+ * @param  {Object<Segment>} segment
  * @return {Segment} segment
  */
 export const augmentSegmentData = segment => {
@@ -119,23 +119,19 @@ export const augmentSegmentData = segment => {
 
 /**
  * Was a segment changed?
- * @param  {Segment}  segment object
+ * @param  {Object<Segment>}  segment object
  * @param  {Array<Segment>} segments
  * @return {boolean} is the segment dirty compared to what collection holds?
  */
 export const isDirtySegment = (segment, segments) => {
   const _segment = clone(segment);
   const _segments = clone(segments);
-  let storedSegment = null;
-  for (let i = 0, len = _segments.length; i < len; i++) {
-    if (_segments[i].uuid === _segment.uuid) {
-      storedSegment = _segments[i];
-      break;
-    }
-  }
-  if (storedSegment === null) {
+  const isSeg = _segment => String(_segment.uuid) === String(_segment.uuid);
+  const index = _segments.findIndex(isSeg);
+  if (index === -1) {
     return false;
   }
+  const storedSegment = _segments[index];
   return (storedSegment.distance !== _segment.distance
     || storedSegment.duration !== _segment.duration
     || storedSegment.pace !== _segment.pace);
@@ -143,7 +139,7 @@ export const isDirtySegment = (segment, segments) => {
 
 /**
  * Can a segment be augmented or is it complete or too incomplete?
- * @param  {Segment} segment is part of a training
+ * @param  {Object<Segment>} segment is part of a training
  * @return {boolean} if augmentable
  */
 export const canAugment = segment => {
@@ -157,19 +153,18 @@ export const canAugment = segment => {
 
 /**
  * Given a Segment with enough data, is the data valid?
- * @param  {Segment}  segment [description]
+ * @param  {Object<Segment>}  segment [description]
  * @return {boolean}         [description]
  */
 export const isValidSegment = segment => {
-  const segmentClone = clone(segment);
-  // if (makeDistance(segmentClone).toString()
-  //    !== Number(segmentClone.distance).toFixed(3).toString()) {
-  //  return false;
-  // }
-  if (makeDuration(segmentClone) !== segmentClone.duration) {
+  const _segment = clone(segment);
+  if (makeDistance(_segment).toString() !== Number(_segment.distance).toFixed(3).toString()) {
     return false;
   }
-  return makePace(segmentClone) === segmentClone.pace;
+  if (makeDuration(_segment) !== _segment.duration) {
+    return false;
+  }
+  return makePace(_segment) === _segment.pace;
 };
 
 /**
@@ -192,21 +187,19 @@ export const parseDuration = duration => {
 };
 
 /**
- * TODO unit test and fix
- * @param {Segment} original pace as mm:ss
- * @return {string} pace as mm:ss
+ * rework a default 1 km pace to a 400 meters pace
+ * @param {string} pace - original pace as mm:ss
+ * @return {string} pace - converted pace as mm:ss
  */
-/*
-export function makePaceAt400(pace) {
-  const durationObj = moment.duration(pace);
+export const convertPaceTo400 = pace => {
+  const durationObj = moment.duration(`00:${pace}`);
   const seconds = durationObj.asSeconds();
   const paceObj = moment.duration(Math.round((seconds / 10) * 4), "seconds");
-  return `${padLeft(paceObj.minutes())}:${padLeft(paceObj.seconds())}`;
+  return `${padLeft(paceObj.minutes(), 2, "0")}:${padLeft(paceObj.seconds(), 2, "0")}`;
 };
-*/
 
 /**
- * @param {Duration} moment.duration obj
+ * @param {Duration} duration - as moment js duration obj
  * @return {String} HH:mm:ss NL
  */
 const formatDuration = duration =>
@@ -225,7 +218,7 @@ const makePace = segment => {
 };
 
 /**
- * @param {Segment} segment object
+ * @param {Object<Segment>} segment object
  * Make duration based on distance and pace
  * @return {string} HH:mm:ss as: ex: 5:10 * 12.93 km = 1:6:48
  */
